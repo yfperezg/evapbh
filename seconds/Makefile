@@ -60,21 +60,6 @@ execfit_pyth:= $(BIN_DIR)/pythia_secs
 #    
 #++++++++++++++++++++++++++++++++++++++++++++#
 
-src_E_files  = $(wildcard $(SRCDIR)/pythia_secs_E.cc)
-cmnd_E_files = $(wildcard $(SRCDIR)/pythia_secs_E.cmnd)
-log_E_files  = $(wildcard $(SRCDIR)/pythia_secs_E.log)
-
-main_obj_files_E += $(src_E_files:%.cpp=%.o)
-main_ofiles_E    += $(notdir $(main_obj_files_E))
-
-# Nomen tabulāriōrum executōrum
-
-execfit_E_pyth:= $(BIN_DIR)/pythia_secs_E
-
-#++++++++++++++++++++++++++++++++++++++++++++#
-#    
-#++++++++++++++++++++++++++++++++++++++++++++#
-
 MM_src_files  = $(wildcard $(SRCDIR)/MM.cpp)
 MM_main_obj_files += $(MM_src_files:%.cpp=%.o)
 MM_main_ofiles    += $(notdir $(MM_main_obj_files))
@@ -87,18 +72,6 @@ execfit_MM:= $(BIN_DIR)/MM
 #    
 #++++++++++++++++++++++++++++++++++++++++++++#
 
-MM_src_E_files  = $(wildcard $(SRCDIR)/MM_E.cpp)
-MM_main_obj_files_E += $(MM_src_E_files:%.cpp=%.o)
-MM_main_ofiles_E    += $(notdir $(MM_main_obj_files_E))
-
-# Nomen tabulāriōrum executōrum
-
-execfit_MM_E:= $(BIN_DIR)/MM_E
-
-#++++++++++++++++++++++++++++++++++++++++++++#
-#    
-#++++++++++++++++++++++++++++++++++++++++++++#
-
 sec_src_files  = $(wildcard $(SRCDIR)/secpbh.cpp)
 sec_main_obj_files += $(sec_src_files:%.cpp=%.o)
 sec_main_ofiles    += $(notdir $(sec_main_obj_files))
@@ -106,18 +79,6 @@ sec_main_ofiles    += $(notdir $(sec_main_obj_files))
 # Nomen tabulāriōrum executōrum
 
 execfit_spbh:= $(BIN_DIR)/secpbh
-
-#++++++++++++++++++++++++++++++++++++++++++++#
-#    
-#++++++++++++++++++++++++++++++++++++++++++++#
-
-sec_E_src_files  = $(wildcard $(SRCDIR)/secpbh_E.cpp)
-sec_E_main_obj_files += $(sec_E_src_files:%.cpp=%.o)
-sec_E_main_ofiles    += $(notdir $(sec_E_main_obj_files))
-
-# Nomen tabulāriōrum executōrum
-
-execfit_spbh_E:= $(BIN_DIR)/secpbh_E
 
 
 #-------------------------------------------------------#
@@ -136,28 +97,15 @@ CC      = g++
 CXX_COMMON := -std=c++11 -I/usr/local/include -I$(PYT_INC) $(CXX_COMMON) $(GZIP_LIB) -O3 -W -Wall -Wshadow -fPIC
 CXX_COMMON += -L/usr/local/lib -larmadillo -L$(PYT_LIB) -Wl,-rpath,$(PYT_LIB) -lpythia8 -ldl -lgsl -lgslcblas -lm -pedantic-errors 
 
-.PHONY : all pytmm epytm scpbh dspbh  mm hemm clean cleanall help
+.PHONY : all pytmm scpbh  mm clean cleanall help
 .PHONY : sclean
 
 all: $(execfit_pyth) $(execfit_spbh)
 pytmm: $(execfit_pyth)
-epytm: $(execfit_E_pyth)
 scpbh: $(execfit_spbh)
 mm:    $(execfit_MM)
-hemm:  $(execfit_MM_E)
-dspbh: $(execfit_spbh_E)
 
 $(execfit_pyth): $(main_obj_files)
-	@echo '=========================================================='
-	@echo ' Tabulārium fūnctiōnis compōnimus ... '
-	@echo '    '
-	@rm -f  $@
-	@$(CC) $@.cc -o $@ $(CXX_COMMON)
-	@echo '    '
-	@echo ' Factum est. '
-	@echo '=========================================================='
-
-$(execfit_E_pyth): $(main_obj_files_E)
 	@echo '=========================================================='
 	@echo ' Tabulārium fūnctiōnis compōnimus ... '
 	@echo '    '
@@ -177,28 +125,8 @@ $(execfit_spbh): $(sec_main_obj_files)
 	@echo ' Factum est. '
 	@echo '=========================================================='
 
-$(execfit_spbh_E): $(sec_E_main_obj_files)
-	@echo '=========================================================='
-	@echo ' Tabulārium fūnctiōnis compōnimus ... '
-	@echo '    '
-	@rm -f  $@
-	@$(CC) $@.cpp -o $@ $(CXX_COMMON)
-	@echo '    '
-	@echo ' Factum est. '
-	@echo '=========================================================='
-
 
 $(execfit_MM): $(MM_main_obj_files)
-	@echo '=========================================================='
-	@echo ' Tabulārium fūnctiōnis compōnimus ... '
-	@echo '    '
-	@rm -f  $@
-	@$(CC) $@.cpp -o $@ $(CXX_COMMON)
-	@echo '    '
-	@echo ' Factum est. '
-	@echo '=========================================================='
-
-$(execfit_E_MM): $(MM_main_obj_files_E)
 	@echo '=========================================================='
 	@echo ' Tabulārium fūnctiōnis compōnimus ... '
 	@echo '    '
@@ -242,16 +170,6 @@ rpythmm :
 	@echo ' Factum est. '
 	@echo '**********************************************************'
 
-repytmm :
-	@echo '**********************************************************'	
-	@echo ' Operātur ... '	
-	@echo '    '
-	@time -p $(execfit_E_pyth) $(cmnd_E_files)
-#> $(log_files)
-	@echo '	   '
-	@echo ' Factum est. '
-	@echo '**********************************************************'
-
 rsecpbh :
 	@echo '**********************************************************'	
 	@echo ' Operātur ... '	
@@ -270,24 +188,6 @@ rmm :
 	@echo ' Factum est. '
 	@echo '**********************************************************'
 
-rhemm :
-	@echo '**********************************************************'	
-	@echo ' Operātur ... '	
-	@echo '    '
-	@time -p $(execfit_MM_E) 
-	@echo '	   '
-	@echo ' Factum est. '
-	@echo '**********************************************************'
-
-
-rescpbh :
-	@echo '**********************************************************'	
-	@echo ' Operātur ... '	
-	@echo '    '
-	@time -p $(execfit_spbh_E) 
-	@echo '	   '
-	@echo ' Factum est. '
-	@echo '**********************************************************'
 
 
 help:
