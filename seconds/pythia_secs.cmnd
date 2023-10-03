@@ -1,0 +1,22 @@
+! t tbar production at the LHC
+Beams:idA = 11    ! first incoming beam is an electron
+Beams:idB = -11   ! second incoming beam is a positron
+Random:setSeed = on
+!
+PDF:lepton = off
+PartonLevel:ISR = off
+PhaseSpace:pTHatMin = 0.
+!
+13:mayDecay = true
+-13:mayDecay = true
+211:mayDecay = true
+-211:mayDecay = true
+310:mayDecay = true
+311:mayDecay = true
+-311:mayDecay = true
+321:mayDecay = true
+111:mayDecay = true
+130:mayDecay = true
+2112:mayDecay = on
+!
+Main:numberOfEvents=100000
