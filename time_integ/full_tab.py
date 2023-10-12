@@ -1,9 +1,15 @@
-##################################################################################
-#                                                                                #
-#                  Primordial Black Hole + Dark Matter Production.               #
-#                         Considering Mass distributions                         #
-#                                                                                #
-##################################################################################
+######################################################################################
+#                                                                                    #
+#                          Primordial Black Hole Evaporation.                        #
+#                      Particle angular dependence from Kerr PBHs                    #
+#   Code to use class for time integration of Hawking flux for a given time window   #
+#                                                                                    #
+#                            Author: Yuber F. Perez-Gonzalez                         #
+#                               Based on: arXiv:2307.14408                           #
+#                                                                                    #
+######################################################################################
+
+
 import sys
 import numpy as np
 from odeintw import odeintw
@@ -29,16 +35,16 @@ from tqdm.contrib.concurrent import process_map
 
 import time
 
-# Computing binning on angular distribution
+# Computing time integral of d3N/dwdOmdt
 
 start = time.time()
 
-tau_s = 1.
+tau_s = 1. # Time in s before BH evaporation
 
 d2N = Int_Kerr(tau_s)
 
-p   = 10.**4
-ain = 0.999
-cos_th = 0.5
+p   = 10.**4 # Momentum in GeV
+ain = 0.999  # Initial a_star
+cos_th = 0.5 # Cosine @ angle wrt EPBH rotation axis
 
 print(d2N.d2N_dEdOm(ain, p, cos_th))

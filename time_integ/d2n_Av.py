@@ -1,9 +1,14 @@
 ##################################################################################
 #                                                                                #
-#                  Primordial Black Hole + Dark Matter Production.               #
-#                         Considering Mass distributions                         #
+#                        Primordial Black Hole Evaporation.                      #
+#                     Particle Angular Dependence from Kerr PBHs                 #
+#       Code to integrate on energy and angle d2N/dEdOm to compute secondaries   #
+#                                                                                #
+#                         Author: Yuber F. Perez-Gonzalez                        #
+#                           Based on: arXiv:2307.14408                           #
 #                                                                                #
 ##################################################################################
+
 import numpy as np
 from odeintw import odeintw
 from scipy import interpolate, optimize
@@ -147,9 +152,9 @@ def d2n_i(log_w, cos_th, pars):
     
     ast = pars[0]
     
-    d2nf = d2Nf_I([ast, log_w, cos_th])[0]#/UNjt
-    d2nv = d2Nv_I([ast, log_w, cos_th])[0]#/UNjt
-    d2ns = d2Ns_I([ast, log_w, cos_th])[0]#/UNjt
+    d2nf = d2Nf_I([ast, log_w, cos_th])[0]
+    d2nv = d2Nv_I([ast, log_w, cos_th])[0]
+    d2ns = d2Ns_I([ast, log_w, cos_th])[0]
     
     return np.array([d2nf, d2nv, d2ns])*log(10.)*w
 

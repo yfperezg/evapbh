@@ -1,9 +1,13 @@
-##################################################################################
-#                                                                                #
-#                       Primordial Black Hole Evaporation.                       #
-#                 Neutrino-Antineutrino Asymmetry from Kerr PBHs                 #
-#                                                                                #
-##################################################################################
+###################################################################################
+#                                                                                 #
+#                       Primordial Black Hole Evaporation.                        #
+#                    Particle angular dependence from Kerr PBHs                   #
+#   Class to determine time integration of Hawking flux for a given time window   #
+#                                                                                 #
+#                         Author: Yuber F. Perez-Gonzalez                         #
+#                           Based on: arXiv:2307.14408                            #
+#                                                                                 #
+###################################################################################
 
 import numpy as np
 from odeintw import odeintw
@@ -39,57 +43,19 @@ import time
 import warnings
 warnings.filterwarnings('ignore')
 
+# --------------------------------------------------- Main Parameters ---------------------------------------------------- #
+#
+#          - 'tau_s' : Time in s before BH evaporation, current tables are for t = 1.0, 10.0, and 100.0                    #
+#
+#------------------------------------------------------------------------------------------------------------------------- #
 
-#-------------------------------------------------------#
-#   dM/dt including full grebody factors, for the SM    #
-#-------------------------------------------------------#
-
-def eps(M, ast): return bh.fSM(M, ast)      # SM contribution
-
-def gam(M, ast): return bh.gSM(M, ast)      # SM contribution
-
-def dMdt(M, ast):
-
-    FSM = bh.fSM(M, ast)      # SM contribution
-    
-    return -bh.kappa * FSM/(M*M)
-
-
-def dastdt(M, ast):
-
-    FSM = bh.fSM(M, ast)      # SM contribution
-    
-    GSM = bh.gSM(M, ast)      # SM contribution
-    
-    return - ast * bh.kappa * (GSM - 2.*FSM)/(M*M*M)
-
-#----------------------#
-#     PBH lifetime     #
-#----------------------#
-
-def tau(Mi, asi):
-    
-    taut = -80.
-    
-    def PlanckMass(t, v, Mi):
-
-        eps = 0.01
-
-        if (eps*Mi > bh.MPL): Mst = eps*Mi
-        else: Mst = bh.MPL
-    
-        return v[0] - Mst 
-    
-    MPL = lambda t, x:PlanckMass(t, x, Mi)
-    MPL.terminal  = True
-    MPL.direction = -1.
-            
-    tau_sol = solve_ivp(fun=lambda t, y: bh.ItauSM(t, y), t_span = [-80., 80.], y0 = [Mi, asi], 
-                            events=MPL, rtol=1.e-5, atol=1.e-15)
-
-    taut = tau_sol.t[-1] # Log10@PBH lifetime in inverse GeV 
-        
-    return 10.**taut
+#-------------------------------------   Credits  ------------------------------------#
+#
+#      If using this code, please cite:                                               #
+#
+#      - arXiv:2307.14408                                                             #
+#
+#-------------------------------------------------------------------------------------#
 
 #----------------------------------------------------#
 #       Integrand for DM particle production Eq      #
@@ -103,7 +69,7 @@ def int_EO(t, p, cos_th, sol, d3A_I, d3N_I, d3Nv_I, d3Ns_I):
     
     w    = bh.GCF * (Mt/bh.GeV_in_g) * p  # Dimensionless momentum ->  w = G*MBH*p
     
-    Jac = log(10.)*10**t                                                                                                                                       
+    Jac = log(10.)*10**t                   
 
     Assm = d3A_I([cos_th, ast, log10(w)])[0]/UNjt
     Ntot = d3N_I([cos_th, ast, log10(w)])[0]/UNjt
@@ -125,12 +91,12 @@ def int_EO(t, p, cos_th, sol, d3A_I, d3N_I, d3Nv_I, d3Ns_I):
 
 class Int_Kerr:
     '''
-    Code for integration of particle emission from Kerr PBH
+    Code for integration in time of particle emission from Kerr PBH
     '''
 
-    def __init__(self, tau_s):
+    def __init__(self, tau_s, Nscls):
 
-        self.tau_s  = tau_s  # Time in s before BH evaporation
+        self.tau_s = tau_s  # Time in s before BH evaporation
         
         self.Nx = 10
         self.Ny = 10
@@ -174,10 +140,6 @@ class Int_Kerr:
         wb_arr  = np.linspace(-3., log10(3.0), Nwb)
         thb_arr = np.linspace(-1, 1, Nhb)
 
-        #*************************************************************************#
-        #      Interpolating d^3 N_scalar/dwdtdOm and  d^3 N_vector/dwdtdOm       # 
-        #*************************************************************************#
-
         d3Nv_tab = np.loadtxt("./Data/d3Nv_dEdtdOm.txt")
         d3Ns_tab = np.loadtxt("./Data/d3Ns_dEdtdOm.txt")
 
@@ -205,39 +167,6 @@ class Int_Kerr:
 
         start = time.time()
         
-        nts1=250
-        nts2=500
-        nts3=250
-
-        an  = 0.
-        am1 = 0.01
-        am2 = 0.9
-        ax  = 1.
-        da1 = (am1 - an)/nts1
-        da2 = (am2 - am1)/nts2
-        da3 = (ax  - am2)/nts3
-
-        a_ar_1 = np.array([an  + da1*i for i in range(nts1)])
-        a_ar_2 = np.array([am1 + da2*i for i in range(nts2)])
-        a_ar_3 = np.array([am2 + da3*i for i in range(nts3+1)])
-
-        a_ar = np.concatenate((a_ar_1, a_ar_2, a_ar_3))
-
-        start = time.time()
-
-        def life_bh(Mi, asi, tau_s):
-
-            if not np.isscalar(Mi): Mi = Mi[0]
-            
-            return tau(10.**Mi, asi)/bh.GeV_in_invs - tau_s
-        
-        def log_Mi(asi): return root(life_bh, 10., args=(asi, tau_s), method='lm').x[0]
-
-        with Pool(12) as pool:
-            Min_PBH = np.array(pool.map(log_Mi, [a_ar[i] for i in range(nts1+nts2+nts3+1)]))
-
-        #np.savetxt("./Data/f_Min_tau="+str(np.round(self.tau_s,3))+".txt", np.array([a_ar, Min_PBH]).T)
-
         a_ar, Min_PBH = np.loadtxt("./Data/f_Min_tau="+str(np.round(self.tau_s,3))+".txt").T
 
         self.fMin_ = interp1d(a_ar, Min_PBH)
@@ -245,7 +174,6 @@ class Int_Kerr:
         end = time.time()
             
         print(colored(f"Time is {end - start} s\n", 'magenta'))
-        #exit()
         
     #----------------------------------------------------------------------------------------------------------------------------------#
     #                                                       Main functions                                                           #
@@ -258,7 +186,7 @@ class Int_Kerr:
         
         inTot = np.array([0., 0., 0., 0.]) 
         
-        Mi  = 10.**self.fMin_(ain) #Min
+        Mi  = 10.**self.fMin_(ain)
         asi = ain
         
         taut = -80.
@@ -278,19 +206,16 @@ class Int_Kerr:
             MPL.terminal  = True 
             MPL.direction = -1. 
             
-            tau_sol = solve_ivp(fun=lambda t, y: bh.ItauSM(t, y), t_span = [-80., 80.], y0 = [Mi, asi], 
+            tau_sol = solve_ivp(fun=lambda t, y: bh.ItauSM(t, y), t_span = [-80., 80.], y0 = [Mi, asi],
                                 events=MPL, rtol=1.e-10, atol=1.e-15, dense_output=True)
             
             t_min = tau_sol.t[0] 
             t_max = tau_sol.t[-1] 
             
-            print(Mi, asi, t_min,t_max, inTot)
-            
             if bh.GCF * (Mi/bh.GeV_in_g) * p <= 3.0:
-                
-                print(1)
-                
-                inTot += quad_vec(int_EO, t_min, t_max, args=(p, cos_th, tau_sol.sol, self.d3A_, self.d3N_, self.d3Nv_, self.d3Ns_), epsabs=1.e-10, epsrel=1.49e-10)[0]
+
+                inTot += quad_vec(int_EO, t_min, t_max, args=(p, cos_th, tau_sol.sol, self.d3A_, self.d3N_, self.d3Nv_, self.d3Ns_),
+                                  epsabs=1.e-10, epsrel=1.49e-10)[0]
                 
             Mi   = tau_sol.y[0,-1]   
             asi  = tau_sol.y[1,-1]   

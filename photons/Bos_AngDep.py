@@ -3,6 +3,9 @@
 #                       Primordial Black Hole Evaporation.                       #
 #               Photon and Scalar Angular Dependence from Kerr PBHs              #
 #                                                                                #
+#                         Author: Yuber F. Perez-Gonzalez                        #
+#                           Based on: arXiv:2307.14408                           #
+#                                                                                #
 ##################################################################################
 
 import numpy as np
@@ -25,7 +28,7 @@ from pathos.multiprocessing import ProcessingPool as Pool
 
 from Integrator import Simp1D, Simp2D, Simp2D_varlims, Trap2D_varlims
 
-from lms import lambdalms
+from lms import lambdalms # Angular eigenvalues
 
 from termcolor import colored
 from tqdm import tqdm
@@ -40,6 +43,26 @@ import time
 
 import warnings
 warnings.filterwarnings('ignore')
+
+# --------------------------------------------------- Main Parameters ---------------------------------------------------- #
+#
+#          - 'c_th' : Cosine @ Theta angle wrt principal BH axis                                                           #
+#
+#          - 'ast'  : Primordial BH initial angular momentum a*                                                            # 
+#
+#          - 'w'    : Dimensionless energy parameter, w = GME                                                              #
+#
+#          - 's'    : Particle spin, code valid only for s = 0 or s = 1                                                    #
+#
+#------------------------------------------------------------------------------------------------------------------------- #
+
+#-------------------------------------   Credits  ------------------------------------#
+#
+#      If using this code, please cite:                                               #
+#
+#      - arXiv:2307.14408                                                             #
+#
+#-------------------------------------------------------------------------------------#
 
 n = 20
 
@@ -87,7 +110,7 @@ def b_k(n, pars):
     
     w, a, l, m, s = pars
 
-    sAlm = lambdalms(l, m, s, a*w).llms() #s_A_lm(w, a, l, m, s)
+    sAlm = lambdalms(l, m, s, a*w).llms()
     
     abg_k = array([abg_ang(i, [sAlm, w, a, l, m, s]) for i in range(3*n+1)]) 
     
@@ -226,7 +249,6 @@ def V(r, GM, a, w, sAlm, m, s):
     return Vs
 
 def CDEqs(rs, v, GM, a, w, sAlm, m, s, tor_f):
-#def CDEqs(v, rs, GM, a, w, l, m, s, tor_f):
     
     psi, dpsi = v
                 
@@ -238,8 +260,6 @@ def Gamma_l(w, ast, l, m, s):
     
     GM = 1.
 
-    #if ast >= 0.99: eps = 1.e-4
-    #el
     if GM*w > 2.5e-1: eps = 1.e-4
     else: eps = 1.e-3
     
@@ -252,11 +272,9 @@ def Gamma_l(w, ast, l, m, s):
     
     c = ast*GM*w
     
-    sAlm = lambdalms(l, -m, -s, c).llms() + c*c + 2*m*c # s_A_lm(GM*w, ast, l, -m, -s) + c*c + 2*m*c #s_A_lm(GM*w, ast, l, -m, -s) + c*c + 2*m*c
+    sAlm = lambdalms(l, -m, -s, c).llms() + c*c + 2*m*c 
     
     if w > -ast*m/(2.*rplus(GM, ast)):
-        
-        #print("no - superradiance")
             
         soltor = solve_ivp(lambda t, z: req(t, z, GM, ast, w, m), [rsminf, rspinf], [rplus(GM, ast) + eps], rtol=1.e-10, atol=1.e-10) 
 
@@ -293,7 +311,7 @@ def Gamma_l(w, ast, l, m, s):
         v0CDE_l = [np.exp(1j * w * rsminf), 1j * w * np.exp(1j * w * rsminf)]
             
         solpsil = solve_ivp(lambda t, z: CDEqs(t, z, GM, ast, w, sAlm, m, s, torl), [rsminf, rsdivm], v0CDE_l, 
-                            method='BDF', rtol=1.e-7, atol=1.e-10)#, rtol=1.e-10, atol=1.e-10)
+                            method='BDF', rtol=1.e-7, atol=1.e-10)
         
         #########################################
         #
@@ -347,7 +365,6 @@ def d3N_dEdtdOm (w, th, ast, pars):
     DF = 1./(exp((w + m*Omega(GM, ast))/TBH(GM, ast)) - (-1)**(2*s))
     
     d3N = (Glms*DF/(2.*pi))*(Sp*Sp + Sm*Sm)/n_0
-    # d3N = (Sp*Sp + Sm*Sm)/n_0
 
     return d3N
 
@@ -370,10 +387,10 @@ class d3B_dEdtdOm:
 
         assert s == 0 or s == 1, print(colored("Code valid only for spin s = 0 or s = 1", 'red'))
         
-        self.jmax = 8
+        self.jmax = 8  # Maximum of total angular momenta to be computed
 
    #----------------------------------------------------------------------------------------------------------------------------------#
-   #                                                       Main functions                                                           #
+   #                                                        Main functions                                                            #
    #----------------------------------------------------------------------------------------------------------------------------------#
     
     def Ntot(self):

@@ -3,6 +3,9 @@
 #                       Primordial Black Hole Evaporation.                       #
 #                 Neutrino-Antineutrino Asymmetry from Kerr PBHs                 #
 #                                                                                #
+#                         Author: Yuber F. Perez-Gonzalez                        #
+#                           Based on: arXiv:2307.14408                           #
+#                                                                                #
 ##################################################################################
 
 import numpy as np
@@ -36,6 +39,26 @@ import time
 
 import warnings
 warnings.filterwarnings('ignore')
+
+# --------------------------------------------------- Main Parameters ---------------------------------------------------- #
+#
+#          - 'c_th' : Cosine @ Theta angle wrt principal BH axis                                                           #
+#
+#          - 'ast'  : Primordial BH initial angular momentum a*                                                            # 
+#
+#          - 'w'    : Dimensionless energy parameter, w = GME                                                              #
+#
+#          - 's'    : Particle spin, code valid only for s = 0 or s = 1                                                    #
+#
+#------------------------------------------------------------------------------------------------------------------------- #
+
+#-------------------------------------   Credits  ------------------------------------#
+#
+#      If using this code, please cite:                                               #
+#
+#      - arXiv:2307.14408                                                             #
+#
+#-------------------------------------------------------------------------------------#
 
 n = 20
 
@@ -76,61 +99,66 @@ def M1(GM, a, Q, mu):
     rm = rmins(GM, a, Q)
     return (rp - rm)*mu
 
-def abg_ang(i, pars):
+def a_ang(i, pars):
     
-    w, Llm, a, mu, j, m, P = pars
+    w, lm, a, mu, j, m, P = pars
     
     k = abs(m) + i
 
-    ek = (-1.)**(j - k) * P
+    ek = (-1)**(j - k) * P
     
-    ak = (a*mu + ek*a*w) * sqrt((k+1)*(k+1) - m*m)/(2*(k + 1)) 
-    bk = ek * (k + 1/2) * (1 - a*w*m/(k*(k+1))) + a*mu*m/(2*k*(k+1)) - Llm
-    gk = (a*mu - ek*a*w) * sqrt(k*k - m*m)/(2*k)
-    
-    abg = np.array([ak, bk, gk])
-    
-    return abg
+    return (a*mu + ek*a*w) * sqrt((k+1)*(k+1) - m*m)/(2*(k + 1)) 
 
 
-def cond_ang(Llm, w, a, mu, j, m, P, n):
+def b_ang(i, pars):
     
-    if not np.isscalar(Llm): Llm = Llm[0]
+    w, lm, a, mu, j, m, P = pars
+    
+    k = abs(m) + i
 
-    ct = [w, Llm, a, mu, j, m, P]
+    ek = (-1)**(j - k) * P
     
-    abg_k = np.array([abg_ang(i, ct) for i in range(n+1)])
+    return ek * (k + 1/2) * (1 - a*w*m/(k*(k+1))) + a*mu*m/(2*k*(k+1)) - lm
+
+
+def g_ang(i, pars):
     
-    alp_k = abg_k[:,0]
-    bet_k = abg_k[:,1]
-    gam_k = abg_k[:,2]
+    w, lm, a, mu, j, m, P = pars
     
-    if bet_k[0] != 0.:
-        f  = bet_k[0]
-    else:
-        f = 1.e-30
+    k = abs(m) + i
+
+    ek = (-1)**(j - k) * P
+    
+    return (a*mu - ek*a*w) * sqrt(k*k - m*m)/(2*k)
+
+
+def cond_ang(lm, w, a, mu, j, m, P, n):
+    
+    if not np.isscalar(lm): lm = lm[0]
+
+    ct = [w, lm, a, mu, j, m, P]
+    
+    f  = b_ang(0, ct)
+    
+    if f == 0.: f = 1.e-15
+            
+    C = f
+    D = 0
+    i = 1
+    Del = 2
+            
+    while abs(Del-1)>1.e-20:
         
-    C   = f
-    D   = 0.
-    Del = 0.
-    
-    for k in range(1, n): 
-    
-        D = bet_k[k] - (alp_k[k-1]*gam_k[k])*D
-    
-        if D == 0.: D += 1.e-30
-    
-        C = bet_k[k] - (alp_k[k-1]*gam_k[k])/C
-    
-        if C == 0.: C += 1.e-30
-    
+        D = b_ang(i, ct) - a_ang(i-1, ct)*g_ang(i, ct)*D
+        if D == 0.: D = 1.e-15
+
+        C = b_ang(i, ct) - a_ang(i-1, ct)*g_ang(i, ct)/C
+        if C == 0.: C = 1.e-15
+
         D = 1./D
-    
         Del = C*D
-        
         f *= Del
-        
-        if abs(Del - 1) < 1.e-30*bet_k[0]: break
+        i += 1
     
     return f
 
@@ -630,12 +658,12 @@ class d3F_dEdtdOm:
         self.Q    = Q     # PBH charge
         self.mf   = mf    # Fermion mass
         
-        self.jmax = 19     # Maximum value of angular mores
+        self.jmax = 19    # Maximum value of angular momenta
 
         self.P = -1       # Parity
         
    #----------------------------------------------------------------------------------------------------------------------------------#
-   #                                                       Main functions                                                           #
+   #                                                         Main functions                                                           #
    #----------------------------------------------------------------------------------------------------------------------------------#
     
     def Asym(self):
@@ -688,7 +716,7 @@ class d3F_dEdtdOm:
 
     def A_et_N(self):
         '''
-        Hawking rate for Asymmetry and total rae, as function of time, energy and angle
+        Hawking rate for Asymmetry and total rate, as function of time, energy and angle
         in units of (nu +- antinu)/(GeV*s*sr)
         '''
         
